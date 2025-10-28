@@ -1,5 +1,5 @@
 package com.projeto.la_couro.model.entity.enums;
 
-public class StatusPedido {
-    
+public enum StatusPedido {
+    CRIADO, PAGO, CANCELADO
 }

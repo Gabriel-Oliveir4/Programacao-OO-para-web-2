@@ -1,38 +1,46 @@
-// ProdutoService.java - regras de negócio de produtos
-
 package com.projeto.la_couro.service;
 
 import com.projeto.la_couro.model.entity.Produto;
-import com.projeto.la_couro.infra.repository.ProdutoRepository;
+import com.projeto.la_couro.model.repo.ProdutoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
 public class ProdutoService {
+    private final ProdutoRepository repo;
 
-    private final ProdutoRepository produtoRepository;
+    public ProdutoService(ProdutoRepository repo) { this.repo = repo; }
 
-    public ProdutoService(ProdutoRepository produtoRepository) {
-        this.produtoRepository = produtoRepository;
+    public List<Produto> listarAtivos() { return repo.findByAtivoTrue(); }
+
+    public Produto buscarPorId(UUID id) { return repo.findById(id).orElseThrow(); }
+
+    @Transactional
+    public Produto criar(Produto p, UUID userId) {
+        p.setId(null);
+        p.setCriadoPorId(userId);
+        return repo.save(p);
     }
 
-    public Produto criarOuAtualizar(Produto produto) {
-        return produtoRepository.save(produto);
+    @Transactional
+    public Produto atualizar(UUID id, Produto input, UUID userId) {
+        var p = buscarPorId(id);
+        p.setNome(input.getNome());
+        p.setTamanho(input.getTamanho());
+        p.setCor(input.getCor());
+        p.setPreco(input.getPreco());
+        p.setFotoUrl(input.getFotoUrl());
+        if (input.isAtivo() != p.isAtivo()) p.setAtivo(input.isAtivo());
+        p.setAtualizadoPorId(userId);
+        return repo.save(p);
     }
 
-    public List<Produto> listarAtivos() {
-        return produtoRepository.findByAtivoTrue();
-    }
-
-    public Produto alterarVisibilidade(UUID id, boolean ativo) {
-        Produto p = produtoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado."));
+    @Transactional
+    public void alterarVisibilidade(UUID id, boolean ativo, UUID userId) {
+        var p = buscarPorId(id);
         p.setAtivo(ativo);
-        return produtoRepository.save(p);
-    }
-
-    public Produto buscar(UUID id) {
-        return produtoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado."));
+        p.setAtualizadoPorId(userId);
+        repo.save(p);
     }
 }

@@ -1,62 +1,60 @@
-// Pedido.java - entidade de pedidos
-
 package com.projeto.la_couro.model.entity;
 
+import com.projeto.la_couro.model.entity.enums.StatusPedido;
 import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
-@Entity
-@Table(name = "pedidos")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Entity @Table(name = "pedidos")
 public class Pedido {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(name = "usuario_id", nullable = false)
     private UUID usuarioId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status = "CRIADO";
+    private StatusPedido status = StatusPedido.CRIADO;
 
-    @Column(nullable = false)
-    private double valorTotal = 0.0;
+    @Column(name = "valor_total", nullable = false, precision = 12, scale = 2)
+    private BigDecimal valorTotal = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private boolean visivel = true;
 
+    @Column(name = "pago_em")
     private LocalDateTime pagoEm;
+
+    @Column(name = "pagamento_metodo", length = 20)
     private String pagamentoMetodo;
+
+    @Column(name = "pagamento_referencia", length = 120)
     private String pagamentoReferencia;
 
+    @Column(name = "criado_por_id")
     private UUID criadoPorId;
+
+    @Column(name = "atualizado_por_id")
     private UUID atualizadoPorId;
-    private LocalDateTime criadoEm = LocalDateTime.now();
+
+    @Column(name = "criado_em", nullable = false)
+    private LocalDateTime criadoEm;
+
+    @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
 
-    // Getters e Setters
-    public UUID getId() { return id; }
-    public UUID getUsuarioId() { return usuarioId; }
-    public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public double getValorTotal() { return valorTotal; }
-    public void setValorTotal(double valorTotal) { this.valorTotal = valorTotal; }
-    public boolean isVisivel() { return visivel; }
-    public void setVisivel(boolean visivel) { this.visivel = visivel; }
-    public LocalDateTime getPagoEm() { return pagoEm; }
-    public void setPagoEm(LocalDateTime pagoEm) { this.pagoEm = pagoEm; }
-    public String getPagamentoMetodo() { return pagamentoMetodo; }
-    public void setPagamentoMetodo(String pagamentoMetodo) { this.pagamentoMetodo = pagamentoMetodo; }
-    public String getPagamentoReferencia() { return pagamentoReferencia; }
-    public void setPagamentoReferencia(String pagamentoReferencia) { this.pagamentoReferencia = pagamentoReferencia; }
-    public UUID getCriadoPorId() { return criadoPorId; }
-    public void setCriadoPorId(UUID criadoPorId) { this.criadoPorId = criadoPorId; }
-    public UUID getAtualizadoPorId() { return atualizadoPorId; }
-    public void setAtualizadoPorId(UUID atualizadoPorId) { this.atualizadoPorId = atualizadoPorId; }
-    public LocalDateTime getCriadoEm() { return criadoEm; }
-    public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
-    public LocalDateTime getAtualizadoEm() { return atualizadoEm; }
-    public void setAtualizadoEm(LocalDateTime atualizadoEm) { this.atualizadoEm = atualizadoEm; }
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ItemPedido> itens;
+
+    @PrePersist
+    void prePersist() { this.criadoEm = LocalDateTime.now(); }
+
+    @PreUpdate
+    void preUpdate() { this.atualizadoEm = LocalDateTime.now(); }
 }

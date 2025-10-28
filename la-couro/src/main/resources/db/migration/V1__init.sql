@@ -1,5 +1,4 @@
--- Banco V1
-
+-- Seu Banco V1
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE usuarios (

@@ -1,43 +1,36 @@
-// ItemPedido.java - entidade de itens do pedido
-
 package com.projeto.la_couro.model.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Entity
-@Table(name = "itens_pedido")
+@Table(name = "itens_pedido", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"pedido_id", "produto_id"})
+})
 public class ItemPedido {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    private UUID pedidoId;
+    @ManyToOne @JoinColumn(name = "pedido_id", nullable = false)
+    private Pedido pedido;
 
-    @Column(nullable = false)
-    private UUID produtoId;
+    @ManyToOne @JoinColumn(name = "produto_id", nullable = false)
+    private Produto produto;
 
     @Column(nullable = false)
     private int quantidade;
 
-    @Column(nullable = false)
-    private double precoUnitario;
+    @Column(name = "preco_unitario", nullable = false, precision = 12, scale = 2)
+    private BigDecimal precoUnitario;
 
-    private LocalDateTime criadoEm = LocalDateTime.now();
+    @Column(name = "criado_em", nullable = false)
+    private LocalDateTime criadoEm;
 
-    // Getters e Setters
-    public UUID getId() { return id; }
-    public UUID getPedidoId() { return pedidoId; }
-    public void setPedidoId(UUID pedidoId) { this.pedidoId = pedidoId; }
-    public UUID getProdutoId() { return produtoId; }
-    public void setProdutoId(UUID produtoId) { this.produtoId = produtoId; }
-    public int getQuantidade() { return quantidade; }
-    public void setQuantidade(int quantidade) { this.quantidade = quantidade; }
-    public double getPrecoUnitario() { return precoUnitario; }
-    public void setPrecoUnitario(double precoUnitario) { this.precoUnitario = precoUnitario; }
-    public LocalDateTime getCriadoEm() { return criadoEm; }
-    public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
+    @PrePersist
+    void prePersist() { this.criadoEm = LocalDateTime.now(); }
 }

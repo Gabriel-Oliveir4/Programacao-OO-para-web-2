@@ -1,5 +1,5 @@
 package com.projeto.la_couro.model.entity.enums;
 
-public class Role {
-    
+public enum Role {
+    ADMIN, CLIENTE
 }

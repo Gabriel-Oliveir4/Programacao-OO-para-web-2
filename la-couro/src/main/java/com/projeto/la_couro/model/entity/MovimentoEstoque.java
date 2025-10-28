@@ -1,44 +1,36 @@
-// MovimentoEstoque.java - entidade de movimentações de estoque
-
 package com.projeto.la_couro.model.entity;
 
+import com.projeto.la_couro.model.entity.enums.TipoMovimento;
 import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "movimentos_estoque")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Entity @Table(name = "movimentos_estoque")
 public class MovimentoEstoque {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    private UUID produtoId;
+    @ManyToOne @JoinColumn(name = "produto_id", nullable = false)
+    private Produto produto;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private String tipo; // ENTRADA, SAIDA, AJUSTE
+    private TipoMovimento tipo;
 
     @Column(nullable = false)
     private int quantidade;
 
     private String motivo;
-    private UUID realizadoPorId;
-    private LocalDateTime criadoEm = LocalDateTime.now();
 
-    // Getters e Setters
-    public UUID getId() { return id; }
-    public UUID getProdutoId() { return produtoId; }
-    public void setProdutoId(UUID produtoId) { this.produtoId = produtoId; }
-    public String getTipo() { return tipo; }
-    public void setTipo(String tipo) { this.tipo = tipo; }
-    public int getQuantidade() { return quantidade; }
-    public void setQuantidade(int quantidade) { this.quantidade = quantidade; }
-    public String getMotivo() { return motivo; }
-    public void setMotivo(String motivo) { this.motivo = motivo; }
-    public UUID getRealizadoPorId() { return realizadoPorId; }
-    public void setRealizadoPorId(UUID realizadoPorId) { this.realizadoPorId = realizadoPorId; }
-    public LocalDateTime getCriadoEm() { return criadoEm; }
-    public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
+    @Column(name = "realizado_por_id")
+    private UUID realizadoPorId;
+
+    @Column(name = "criado_em", nullable = false)
+    private LocalDateTime criadoEm;
+
+    @PrePersist
+    void prePersist() { this.criadoEm = LocalDateTime.now(); }
 }

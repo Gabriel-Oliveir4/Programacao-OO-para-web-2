@@ -5,9 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class LaCouroApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(LaCouroApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(LaCouroApplication.class, args);
+    }
 }

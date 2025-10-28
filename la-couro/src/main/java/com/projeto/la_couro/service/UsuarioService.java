@@ -1,61 +1,87 @@
-// UsuarioService.java - regras de negócio de usuários
-
 package com.projeto.la_couro.service;
 
+/*
+ * Serviço responsável por gerenciar criação, listagem e desativação de usuários (ADMIN e CLIENTE)
+ */
+
 import com.projeto.la_couro.model.entity.Usuario;
-import com.projeto.la_couro.infra.repository.UsuarioRepository;
+import com.projeto.la_couro.model.entity.enums.Role;
+import com.projeto.la_couro.model.repo.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.util.*;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UsuarioService {
 
-    private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final UsuarioRepository repo;
+    private final PasswordEncoder encoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
-        this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
+    public UsuarioService(UsuarioRepository repo, PasswordEncoder encoder) {
+        this.repo = repo;
+        this.encoder = encoder;
     }
 
+    @Transactional
     public Usuario registrarCliente(String nome, String email, String senha) {
-        if (usuarioRepository.existsByEmail(email))
-            throw new RuntimeException("E-mail já cadastrado.");
+        repo.findByEmail(email).ifPresent(u -> {
+            throw new IllegalArgumentException("E-mail já cadastrado");
+        });
 
-        Usuario usuario = new Usuario();
-        usuario.setNome(nome);
-        usuario.setEmail(email);
-        usuario.setSenha(passwordEncoder.encode(senha));
-        usuario.setRole("CLIENTE");
-        return usuarioRepository.save(usuario);
+        var u = new Usuario();
+        u.setNome(nome);
+        u.setEmail(email);
+        u.setSenha(encoder.encode(senha));
+        u.setRole(Role.CLIENTE);
+        return repo.save(u);
     }
 
-    public Usuario criarAdmin(String nome, String email, String senha) {
-        if (usuarioRepository.existsByEmail(email))
-            throw new RuntimeException("E-mail já cadastrado.");
+    @Transactional
+    public Usuario registrarAdmin(String nome, String email, String senha, UUID criadorId) {
+        if (criadorId == null) {
+            throw new IllegalStateException("Autenticação requerida");
+        }
 
-        Usuario usuario = new Usuario();
-        usuario.setNome(nome);
-        usuario.setEmail(email);
-        usuario.setSenha(passwordEncoder.encode(senha));
-        usuario.setRole("ADMIN");
-        return usuarioRepository.save(usuario);
+        var criador = repo.findById(criadorId)
+                .orElseThrow(() -> new IllegalStateException("Usuário autenticado não encontrado"));
+        if (!criador.isAtivo()) {
+            throw new IllegalStateException("Conta do criador está desativada");
+        }
+
+        if (criador.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("Apenas ADMIN pode criar outro ADMIN");
+        }
+
+        repo.findByEmail(email).ifPresent(u -> {
+            throw new IllegalArgumentException("E-mail já cadastrado");
+        });
+
+        var u = new Usuario();
+        u.setNome(nome);
+        u.setEmail(email);
+        u.setSenha(encoder.encode(senha));
+        u.setRole(Role.ADMIN);
+        return repo.save(u);
     }
 
-    public List<Usuario> listarAtivos(boolean ativo) {
-        return usuarioRepository.findByAtivo(ativo);
+    public List<Usuario> listarPorAtivo(boolean ativo) {
+        return repo.findByAtivo(ativo);
     }
 
-    public Usuario desativarConta(UUID id) {
-        Usuario u = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+    public Usuario buscarPorId(UUID id) {
+        return repo.findById(id).orElseThrow();
+    }
+
+    @Transactional
+    public void desativarConta(UUID id) {
+        var u = buscarPorId(id);
+        if (!u.isAtivo()) return;
         u.setAtivo(false);
-        u.setDesativadoEm(java.time.LocalDateTime.now());
-        return usuarioRepository.save(u);
-    }
-
-    public Optional<Usuario> buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email);
+        u.setDesativadoEm(LocalDateTime.now());
+        repo.save(u);
     }
 }

@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: la-couro
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/la_couro
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
+jwt:
+  secret: "b5dfefb6d09a44ac84a342b732da3b73"
+  expiration: 86400000 # 24 horas
+
+logging:
+  level:
+    org.hibernate.SQL: info
+    org.springframework.web: info
+    com.projeto.la_couro: debug

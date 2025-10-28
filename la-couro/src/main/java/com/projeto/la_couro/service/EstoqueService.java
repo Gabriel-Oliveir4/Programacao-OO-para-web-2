@@ -1,45 +1,49 @@
-// EstoqueService.java - controle de estoque e movimentações
-
 package com.projeto.la_couro.service;
 
-import com.projeto.la_couro.model.entity.*;
-import com.projeto.la_couro.infra.repository.*;
+import com.projeto.la_couro.model.entity.MovimentoEstoque;
+import com.projeto.la_couro.model.entity.Produto;
+import com.projeto.la_couro.model.entity.enums.TipoMovimento;
+import com.projeto.la_couro.model.repo.MovimentoEstoqueRepository;
+import com.projeto.la_couro.model.repo.ProdutoRepository;
 import org.springframework.stereotype.Service;
-import java.util.*;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.UUID;
 
 @Service
 public class EstoqueService {
+    private final ProdutoRepository produtoRepo;
+    private final MovimentoEstoqueRepository movRepo;
 
-    private final ProdutoRepository produtoRepository;
-    private final MovimentoEstoqueRepository movimentoEstoqueRepository;
-
-    public EstoqueService(ProdutoRepository produtoRepository, MovimentoEstoqueRepository movimentoEstoqueRepository) {
-        this.produtoRepository = produtoRepository;
-        this.movimentoEstoqueRepository = movimentoEstoqueRepository;
+    public EstoqueService(ProdutoRepository produtoRepo, MovimentoEstoqueRepository movRepo) {
+        this.produtoRepo = produtoRepo; this.movRepo = movRepo;
     }
 
-    public void registrarMovimento(UUID produtoId, String tipo, int quantidade, String motivo, UUID usuarioId) {
-        Produto produto = produtoRepository.findById(produtoId)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado."));
+    @Transactional
+    public void creditar(UUID produtoId, int qtd, UUID userId) {
+        if (qtd <= 0) throw new IllegalArgumentException("qtd > 0");
+        var p = produtoRepo.findById(produtoId).orElseThrow();
+        p.setQuantidadeEstoque(p.getQuantidadeEstoque() + qtd);
+        produtoRepo.save(p);
+        registrarMov(p, TipoMovimento.ENTRADA, qtd, "Entrada manual", userId);
+    }
 
-        int novaQtd = produto.getQuantidadeEstoque();
+    @Transactional
+    public void debitar(UUID produtoId, int qtd, UUID userId) {
+        if (qtd <= 0) throw new IllegalArgumentException("qtd > 0");
+        var p = produtoRepo.findById(produtoId).orElseThrow();
+        if (p.getQuantidadeEstoque() < qtd) throw new IllegalStateException("Estoque insuficiente");
+        p.setQuantidadeEstoque(p.getQuantidadeEstoque() - qtd);
+        produtoRepo.save(p);
+        registrarMov(p, TipoMovimento.SAIDA, qtd, "Saída manual", userId);
+    }
 
-        if ("ENTRADA".equalsIgnoreCase(tipo)) novaQtd += quantidade;
-        else if ("SAIDA".equalsIgnoreCase(tipo)) novaQtd -= quantidade;
-        else if ("AJUSTE".equalsIgnoreCase(tipo)) novaQtd += quantidade;
-        else throw new RuntimeException("Tipo de movimento inválido.");
-
-        if (novaQtd < 0) throw new RuntimeException("Estoque insuficiente.");
-
-        produto.setQuantidadeEstoque(novaQtd);
-        produtoRepository.save(produto);
-
-        MovimentoEstoque mov = new MovimentoEstoque();
-        mov.setProdutoId(produtoId);
-        mov.setTipo(tipo.toUpperCase());
-        mov.setQuantidade(quantidade);
-        mov.setMotivo(motivo);
-        mov.setRealizadoPorId(usuarioId);
-        movimentoEstoqueRepository.save(mov);
+    private void registrarMov(Produto p, TipoMovimento tipo, int qtd, String motivo, UUID userId) {
+        var m = new MovimentoEstoque();
+        m.setProduto(p);
+        m.setTipo(tipo);
+        m.setQuantidade(qtd);
+        m.setMotivo(motivo);
+        m.setRealizadoPorId(userId);
+        movRepo.save(m);
     }
 }
