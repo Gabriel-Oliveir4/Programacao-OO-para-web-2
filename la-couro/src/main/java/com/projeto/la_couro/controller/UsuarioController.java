@@ -10,6 +10,7 @@ import com.projeto.la_couro.security.AuthUtils;
 import com.projeto.la_couro.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@PreAuthorize("hasRole('ADMIN')")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -37,7 +39,7 @@ public class UsuarioController {
 
     @PostMapping("/registrar-admin")
     public ResponseEntity<Usuario> registrarAdmin(@Valid @RequestBody RegisterRequest req) {
-        UUID criadorId = AuthUtils.getCurrentUserId();
+        UUID criadorId = AuthUtils.requireCurrentUserId();
         Usuario u = usuarioService.registrarAdmin(req.nome(), req.email(), req.senha(), criadorId);
         return ResponseEntity.ok(u);
     }

@@ -21,6 +21,7 @@ public class EstoqueService {
     @Transactional
     public void creditar(UUID produtoId, int qtd, UUID userId) {
         if (qtd <= 0) throw new IllegalArgumentException("qtd > 0");
+        if (userId == null) throw new IllegalStateException("Usuário responsável obrigatório");
         var p = produtoRepo.findById(produtoId).orElseThrow();
         p.setQuantidadeEstoque(p.getQuantidadeEstoque() + qtd);
         produtoRepo.save(p);
@@ -30,6 +31,7 @@ public class EstoqueService {
     @Transactional
     public void debitar(UUID produtoId, int qtd, UUID userId) {
         if (qtd <= 0) throw new IllegalArgumentException("qtd > 0");
+        if (userId == null) throw new IllegalStateException("Usuário responsável obrigatório");
         var p = produtoRepo.findById(produtoId).orElseThrow();
         if (p.getQuantidadeEstoque() < qtd) throw new IllegalStateException("Estoque insuficiente");
         p.setQuantidadeEstoque(p.getQuantidadeEstoque() - qtd);

@@ -1,5 +1,6 @@
 package com.projeto.la_couro.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.projeto.la_couro.model.entity.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -25,6 +26,7 @@ public class Usuario {
 
     @NotBlank
     @Column(nullable = false, length = 255)
+    @JsonIgnore
     private String senha;
 
     @Enumerated(EnumType.STRING)

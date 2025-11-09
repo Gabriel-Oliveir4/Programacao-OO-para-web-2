@@ -18,13 +18,20 @@ public class ProdutoService {
 
     @Transactional
     public Produto criar(Produto p, UUID userId) {
+        if (userId == null) {
+            throw new IllegalStateException("Autenticação requerida");
+        }
         p.setId(null);
+        p.setAtivo(true);
         p.setCriadoPorId(userId);
         return repo.save(p);
     }
 
     @Transactional
     public Produto atualizar(UUID id, Produto input, UUID userId) {
+        if (userId == null) {
+            throw new IllegalStateException("Autenticação requerida");
+        }
         var p = buscarPorId(id);
         p.setNome(input.getNome());
         p.setTamanho(input.getTamanho());
@@ -38,6 +45,9 @@ public class ProdutoService {
 
     @Transactional
     public void alterarVisibilidade(UUID id, boolean ativo, UUID userId) {
+        if (userId == null) {
+            throw new IllegalStateException("Autenticação requerida");
+        }
         var p = buscarPorId(id);
         p.setAtivo(ativo);
         p.setAtualizadoPorId(userId);

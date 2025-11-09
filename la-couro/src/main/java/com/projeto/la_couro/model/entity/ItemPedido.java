@@ -1,5 +1,6 @@
 package com.projeto.la_couro.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ public class ItemPedido {
     private UUID id;
 
     @ManyToOne @JoinColumn(name = "pedido_id", nullable = false)
+    @JsonBackReference
     private Pedido pedido;
 
     @ManyToOne @JoinColumn(name = "produto_id", nullable = false)

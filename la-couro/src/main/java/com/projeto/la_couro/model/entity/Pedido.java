@@ -1,5 +1,6 @@
 package com.projeto.la_couro.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.projeto.la_couro.model.entity.enums.StatusPedido;
 import jakarta.persistence.*;
 import lombok.*;
@@ -50,6 +51,7 @@ public class Pedido {
     private LocalDateTime atualizadoEm;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<ItemPedido> itens;
 
     @PrePersist
