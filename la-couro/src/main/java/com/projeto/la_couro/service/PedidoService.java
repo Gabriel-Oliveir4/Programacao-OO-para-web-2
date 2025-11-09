@@ -30,7 +30,7 @@ public class PedidoService {
         this.usuarioRepo = usuarioRepo;
     }
 
-    public List<Pedido> listarTodos() { return pedidoRepo.findAll(); }
+    public List<Pedido> listarTodos() { return pedidoRepo.findAllBy(); }
 
     public List<Pedido> listarDoUsuario(UUID usuarioId, boolean visiveis) {
         return pedidoRepo.findByUsuarioIdAndVisivel(usuarioId, visiveis);
