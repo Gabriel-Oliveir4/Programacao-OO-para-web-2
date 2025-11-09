@@ -110,4 +110,5 @@ Todas as rotas (exceto autenticação) exigem o header `Authorization: Bearer <t
 LINK VIDEO
 
 https://youtu.be/DZxdKFjQxlU
->>>>>>> 85b2cf2c3d1d0c6dcec4c91b9a94f581ec730c92
+
+arquivo LaCouro_Postman serve para o collections no postman
