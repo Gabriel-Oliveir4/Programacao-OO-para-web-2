@@ -1,0 +1,388 @@
+{
+  "info": {
+    "name": "LaCouro — Demo com criação de ADMIN (requer seed inicial)",
+    "_postman_id": "723291d6-4152-44fe-9460-bd8c96e36511",
+    "description": "Coleção com fluxo mínimo para demonstração. Observação importante: por segurança, a API só permite criar ADMIN autenticado como ADMIN. Portanto o PRIMEIRO ADMIN precisa existir no banco (seed SQL manual). Depois disso, o request 5 cria um novo ADMIN pela API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@lacouro.com"
+    },
+    {
+      "key": "adminSenha",
+      "value": "Admin@123"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenCliente",
+      "value": ""
+    },
+    {
+      "key": "clienteId",
+      "value": ""
+    },
+    {
+      "key": "clienteEmail",
+      "value": ""
+    },
+    {
+      "key": "produtoId",
+      "value": ""
+    },
+    {
+      "key": "pedidoId",
+      "value": ""
+    },
+    {
+      "key": "novoAdminEmail",
+      "value": "admin2+{{$timestamp}}@mail.com"
+    }
+  ],
+  "item": [
+    {
+      "name": "0) Leia isto primeiro (seed ADMIN obrigatório)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/swagger-ui/index.html#/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "swagger-ui",
+            "index.html#",
+            ""
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Leia as instruções na descrição da coleção', function(){ pm.expect(true).to.be.true; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1) Registrar CLIENTE (público) → define {{clienteId}} e {{clienteEmail}}",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Cliente {{$randomFirstName}} {{$randomLastName}}\",\n  \"email\": \"cliente.demo+{{$timestamp}}@mail.com\",\n  \"senha\": \"123456\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\", ()=>pm.response.to.have.status(200));",
+              "const u=pm.response.json();",
+              "pm.collectionVariables.set(\"clienteId\", u.id);",
+              "pm.collectionVariables.set(\"clienteEmail\", u.email);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2) Login CLIENTE → define {{tokenCliente}}",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"senha\": \"123456\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\", ()=>pm.response.to.have.status(200));",
+              "const r=pm.response.json();",
+              "pm.collectionVariables.set(\"tokenCliente\", r.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) Login ADMIN (seed) → define {{tokenAdmin}}",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"senha\": \"{{adminSenha}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\", ()=>pm.response.to.have.status(200));",
+              "const r=pm.response.json();",
+              "pm.collectionVariables.set(\"tokenAdmin\", r.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) Criar PRODUTO (ADMIN) → define {{produtoId}}",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/produtos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "produtos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Tapete {{$timestamp}}\",\n  \"preco\": 199.9,\n  \"quantidadeEstoque\": 10,\n  \"tamanho\": \"2.00x2.50\",\n  \"cor\": \"Azul\",\n  \"fotoUrl\": \"https://picsum.photos/seed/{{$guid}}/600/400\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\", ()=>pm.response.to.have.status(200));",
+              "const p=pm.response.json();",
+              "pm.collectionVariables.set(\"produtoId\", p.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5) Criar ADMIN por ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/usuarios/registrar-admin",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "usuarios",
+            "registrar-admin"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Admin {{$randomFirstName}}\",\n  \"email\": \"{{novoAdminEmail}}\",\n  \"senha\": \"Admin@123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\", ()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6) Criar PEDIDO (CLIENTE) → define {{pedidoId}}",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenCliente}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/pedidos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "pedidos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usuarioId\": \"{{clienteId}}\",\n  \"itens\": [\n    {\n      \"produtoId\": \"{{produtoId}}\",\n      \"quantidade\": 2\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200\", ()=>pm.response.to.have.status(200));",
+              "const ped=pm.response.json();",
+              "pm.collectionVariables.set(\"pedidoId\", ped.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7) Pagar PEDIDO (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAdmin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/pedidos/{{pedidoId}}/pagar",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "{{pedidoId}}",
+            "pagar"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metodo\": \"PIX\",\n  \"referencia\": \"pgto-{{$guid}}\"\n}"
+        }
+      },
+      "event": []
+    },
+    {
+      "name": "8) Listar PEDIDOS do CLIENTE (CLIENTE)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenCliente}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/pedidos/usuario/{{clienteId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "pedidos",
+            "usuario",
+            "{{clienteId}}"
+          ]
+        }
+      },
+      "event": []
+    }
+  ]
+}
