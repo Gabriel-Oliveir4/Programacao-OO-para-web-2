@@ -1,6 +1,7 @@
 package com.projeto.la_couro.service;
 
 import com.projeto.la_couro.model.repo.UsuarioRepository;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +19,9 @@ public class AuthService {
 
     public String login(String email, String senha) {
         var user = usuarioRepo.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
+            .orElseThrow(() -> new BadCredentialsException("Credenciais inválidas"));
         if (!encoder.matches(senha, user.getSenha())) {
-            throw new RuntimeException("Credenciais inválidas");
+            throw new BadCredentialsException("Credenciais inválidas");
         }
         return jwt.generate(user.getId(), user.getEmail(), user.getRole().name());
     }

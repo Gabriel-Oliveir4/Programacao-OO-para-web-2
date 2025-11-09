@@ -1,7 +1,6 @@
 package com.projeto.la_couro.controller;
 
 import com.projeto.la_couro.dto.auth.*;
-import com.projeto.la_couro.model.entity.Usuario;
 import com.projeto.la_couro.service.AuthService;
 import com.projeto.la_couro.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -27,8 +26,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Usuario> registrar(@Valid @RequestBody RegisterRequest req) {
-        Usuario u = usuarioService.registrarCliente(req.nome(), req.email(), req.senha());
-        return ResponseEntity.ok(u);
+    public ResponseEntity<RegisterResponse> registrar(@Valid @RequestBody RegisterRequest req) {
+        var u = usuarioService.registrarCliente(req.nome(), req.email(), req.senha());
+        var body = new RegisterResponse(u.getId(), u.getNome(), u.getEmail(), u.getRole().name());
+        return ResponseEntity.ok(body);
     }
 }

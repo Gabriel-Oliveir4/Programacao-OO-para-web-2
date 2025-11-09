@@ -6,6 +6,7 @@ import com.projeto.la_couro.security.AuthUtils;
 import com.projeto.la_couro.service.ProdutoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,8 +31,9 @@ public class ProdutoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Produto> criar(@Valid @RequestBody ProdutoCreateRequest dto) {
-        UUID userId = AuthUtils.getCurrentUserId();
+        UUID userId = AuthUtils.requireCurrentUserId();
         var p = Produto.builder()
             .nome(dto.nome())
             .tamanho(dto.tamanho())
@@ -45,8 +47,9 @@ public class ProdutoController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Produto> atualizar(@PathVariable UUID id, @Valid @RequestBody ProdutoUpdateRequest dto) {
-        UUID userId = AuthUtils.getCurrentUserId();
+        UUID userId = AuthUtils.requireCurrentUserId();
         var p = Produto.builder()
             .nome(dto.nome())
             .tamanho(dto.tamanho())
@@ -59,8 +62,9 @@ public class ProdutoController {
     }
 
     @PatchMapping("/{id}/visibilidade")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> alterarVisibilidade(@PathVariable UUID id, @RequestParam boolean ativo) {
-        UUID userId = AuthUtils.getCurrentUserId();
+        UUID userId = AuthUtils.requireCurrentUserId();
         produtoService.alterarVisibilidade(id, ativo, userId);
         return ResponseEntity.ok().build();
     }
