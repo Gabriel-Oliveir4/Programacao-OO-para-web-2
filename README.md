@@ -48,6 +48,7 @@ O projeto utiliza PostgreSQL e migrações Flyway. O arquivo `application.yml` d
 As migrações:
 - `V1__init.sql`: cria as tabelas `usuarios`, `produtos`, `pedidos`, `itens_pedido`, `movimentos_estoque` e insere um administrador padrão.
 - `V2__itens_pedido_add_id.sql`: adiciona chave primária simples à tabela `itens_pedido` e mantém produto por pedido.
+- `V3__sync_admin_password.sql`: garante que o usuário `admin@lacouro.com` exista, esteja ativo e utilize a senha padrão `Admin@123`.
 
 ## 4. Fluxo principal
 1. Um cliente ou administrador autentica-se via `AuthController`, que aciona `AuthService` e `JwtService` para gerar o token.
@@ -65,6 +66,8 @@ Todas as rotas (exceto autenticação) exigem o header `Authorization: Bearer <t
 |--------|----------------------|-------------|---------------------|-------------------|
 | POST   | `/api/auth/login`    | Público     | `{ "email": "user@dominio.com", "senha": "Senha@123" }` | `{ "token": "<JWT>" }` |
 | POST   | `/api/auth/register` | Público     | `{ "nome": "Cliente", "email": "user@dominio.com", "senha": "Senha@123" }` | `{ "id": "<uuid>", "nome": "Cliente", "email": "user@dominio.com", "role": "CLIENTE" }` |
+
+> **Dica:** após executar as migrações, já existe um administrador pronto para uso no Postman com `email: admin@lacouro.com` e `senha: Admin@123`.
 
 ### 5.2 Produtos (`/api/produtos`)
 
