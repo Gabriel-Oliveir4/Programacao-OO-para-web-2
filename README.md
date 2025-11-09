@@ -106,6 +106,6 @@ Todas as rotas (exceto autenticação) exigem o header `Authorization: Bearer <t
 | POST   | `/api/usuarios/registrar-admin` | JWT (ADMIN) | `{ "nome": "Admin", "email": "admin@dominio.com", "senha": "Senha@123" }` | Cria novo administrador. |
 | DELETE | `/api/usuarios/{id}`            | JWT (ADMIN) | —                  | Desativa a conta informada. |
 
-LINK VIDEO (TEM NO REPOSITORIO TAMBEM)
+LINK VIDEO
 
 https://youtu.be/DZxdKFjQxlU
