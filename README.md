@@ -107,7 +107,7 @@ Todas as rotas (exceto autenticação) exigem o header `Authorization: Bearer <t
 | DELETE | `/api/usuarios/{id}`            | JWT (ADMIN) | —                  | Desativa a conta informada. |
 
 
-LINK VIDEO (TEM NO REPOSITORIO TAMBEM)
+LINK VIDEO
 
 https://youtu.be/DZxdKFjQxlU
 >>>>>>> 85b2cf2c3d1d0c6dcec4c91b9a94f581ec730c92
