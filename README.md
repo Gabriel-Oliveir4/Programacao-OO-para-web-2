@@ -54,3 +54,51 @@ As migrações:
 2. O token é enviado nas requisições seguintes. `JwtAuthFilter` valida o token, carrega o usuário pelo repositório e grava seu `UUID` no contexto.
 3. Controladores usam `AuthUtils` para obter o usuário atual, validar permissões e delegar para os serviços.
 4. Os serviços manipulam as entidades através dos repositórios e registram os efeitos no banco. Erros são capturados pelo `ApiExceptionHandler`, que retorna respostas consistentes ao cliente.
+
+## 5. Endpoints para teste no Postman
+
+Todas as rotas (exceto autenticação) exigem o header `Authorization: Bearer <token>` obtido após o login. Parâmetros marcados como opcionais possuem valor padrão quando omitidos.
+
+### 5.1 Autenticação (`/api/auth`)
+
+| Método | Caminho              | Autorização | Corpo de requisição | Resposta esperada |
+|--------|----------------------|-------------|---------------------|-------------------|
+| POST   | `/api/auth/login`    | Público     | `{ "email": "user@dominio.com", "senha": "Senha@123" }` | `{ "token": "<JWT>" }` |
+| POST   | `/api/auth/register` | Público     | `{ "nome": "Cliente", "email": "user@dominio.com", "senha": "Senha@123" }` | `{ "id": "<uuid>", "nome": "Cliente", "email": "user@dominio.com", "role": "CLIENTE" }` |
+
+### 5.2 Produtos (`/api/produtos`)
+
+| Método | Caminho                             | Autorização | Corpo / parâmetros | Observações |
+|--------|-------------------------------------|-------------|--------------------|-------------|
+| GET    | `/api/produtos`                     | JWT         | —                  | Lista apenas produtos ativos. |
+| GET    | `/api/produtos/{id}`                | JWT         | —                  | Retorna o produto pelo identificador. |
+| POST   | `/api/produtos`                     | JWT (ADMIN) | `{ "nome": "Tapete", "preco": 99.9, "quantidadeEstoque": 10, ... }` | Criação restrita a administradores. |
+| PUT    | `/api/produtos/{id}`                | JWT (ADMIN) | `{ "nome": "Tapete", "preco": 120.0, "ativo": true, ... }` | Atualiza dados gerais do produto. |
+| PATCH  | `/api/produtos/{id}/visibilidade`   | JWT (ADMIN) | `?ativo=true/false` | Alterna a flag de visibilidade. |
+
+### 5.3 Pedidos (`/api/pedidos`)
+
+| Método | Caminho                                   | Autorização          | Corpo / parâmetros | Observações |
+|--------|-------------------------------------------|----------------------|--------------------|-------------|
+| GET    | `/api/pedidos`                            | JWT (ADMIN)          | —                  | Lista todos os pedidos. |
+| GET    | `/api/pedidos/usuario/{usuarioId}`        | JWT (ADMIN ou dono)  | `?visiveis=true`   | Clientes só veem seus próprios pedidos. |
+| GET    | `/api/pedidos/{id}`                       | JWT (ADMIN ou dono)  | —                  | Retorna um pedido específico. |
+| POST   | `/api/pedidos`                            | JWT (ADMIN ou dono)  | `{ "usuarioId": "<uuid>", "itens": [{ "produtoId": "<uuid>", "quantidade": 2 }] }` | Usuário autenticado deve coincidir com `usuarioId` salvo se administrador. |
+| POST   | `/api/pedidos/{id}/pagar`                 | JWT                  | `{ "metodo": "PIX", "referencia": "chave" }` | Debita estoque e altera status para pago. |
+| POST   | `/api/pedidos/{id}/cancelar`              | JWT                  | —                  | Valida permissões e marca pedido como cancelado. |
+
+### 5.4 Estoque (`/api/estoque`)
+
+| Método | Caminho                 | Autorização | Corpo / parâmetros | Observações |
+|--------|-------------------------|-------------|--------------------|-------------|
+| POST   | `/api/estoque/entrada`  | JWT         | `?produtoId=<uuid>&qtd=5` | Credita quantidade no estoque. |
+| POST   | `/api/estoque/saida`    | JWT         | `?produtoId=<uuid>&qtd=5` | Debita quantidade no estoque. |
+
+### 5.5 Usuários (`/api/usuarios`)
+
+| Método | Caminho                         | Autorização | Corpo / parâmetros | Observações |
+|--------|---------------------------------|-------------|--------------------|-------------|
+| GET    | `/api/usuarios`                 | JWT (ADMIN) | `?ativo=true`      | Lista contas conforme status. |
+| GET    | `/api/usuarios/{id}`            | JWT (ADMIN) | —                  | Busca usuário pelo identificador. |
+| POST   | `/api/usuarios/registrar-admin` | JWT (ADMIN) | `{ "nome": "Admin", "email": "admin@dominio.com", "senha": "Senha@123" }` | Cria novo administrador. |
+| DELETE | `/api/usuarios/{id}`            | JWT (ADMIN) | —                  | Desativa a conta informada. |
