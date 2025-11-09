@@ -26,12 +26,14 @@ public class Produto {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal preco;
 
+    @Builder.Default
     @Column(name = "quantidade_estoque", nullable = false)
     private int quantidadeEstoque = 0;
 
     @Column(name = "foto_url", length = 255)
     private String fotoUrl;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean ativo = true;
 

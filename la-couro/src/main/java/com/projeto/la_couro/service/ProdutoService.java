@@ -22,6 +22,7 @@ public class ProdutoService {
             throw new IllegalStateException("Autenticação requerida");
         }
         p.setId(null);
+        p.setAtivo(true);
         p.setCriadoPorId(userId);
         return repo.save(p);
     }
