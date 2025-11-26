@@ -1,56 +1,93 @@
 # La Couro API
 
+Documentação prática para rodar o backend localmente, entender os contratos REST e consumir as APIs em outro projeto (ex.: um frontend Angular).
+
 ## 1. Visão geral do domínio
-A aplicação expõe serviços para cadastro de usuários, catálogo de produtos, controle de pedidos e movimentos de estoque de uma loja de tapetes. O ponto de entrada do Spring Boot é `LaCouroApplication`, que carrega os componentes descritos abaixo.
+A aplicação expõe serviços para cadastro de usuários, catálogo de produtos, fluxo de pedidos e controle de estoque. O ponto de entrada é `LaCouroApplication`, que carrega as camadas descritas abaixo.
 
-## 2. Camadas da aplicação
-A solução segue uma divisão em camadas para isolar responsabilidades.
+## 2. Arquitetura resumida
+- **Configuração**: `config/SecurityConfig` (Spring Security + JWT stateless), `config/OpenApiConfig` (Swagger).
+- **Segurança**: `security/JwtAuthFilter` lê o cabeçalho `Authorization`, valida o token via `service/JwtService` e popular o `SecurityContext`.
+- **API/Controllers**: expostos em `/api/**`, usam DTOs de `dto/*` e delegam para serviços.
+- **Serviços**: regras de negócio em `service/*` (autenticação, usuários, produtos, estoque e pedidos).
+- **Persistência**: entidades JPA em `model/entity` e repositórios em `model/repo`.
 
-### 2.1 API
-- `api/ApiExceptionHandler`: intercepta exceções lançadas pelos controladores e serviços para responder com payload padronizado contendo data, caminho, código HTTP e detalhes de erro.
+## 3. Como executar a API localmente
+1. **Pré-requisitos**: Java 17, Maven, PostgreSQL rodando em `localhost:5432` com banco `la_couro`, usuário `postgres`/`postgres` (ajuste `spring.datasource.*` em `application.yml` se necessário).
+2. **Criar banco (uma vez)**: `createdb la_couro`.
+3. **Rodar com Maven**: na pasta `la-couro`, execute `./mvnw spring-boot:run`. As migrações Flyway (`db/migration/V1__init.sql`, `V2__itens_pedido_add_id.sql`) sobem automaticamente.
+4. **Acesso**: API em `http://localhost:8080`, Swagger em `http://localhost:8080/swagger-ui.html`.
+5. **Usuário inicial**: o script `V1__init.sql` cria um administrador padrão `admin@lacouro.com` (senha definida no hash do script; altere via SQL se quiser trocar).
 
-### 2.2 Configuração
-- `config/OpenApiConfig`: registra a documentação OpenAPI/Swagger e o esquema de autenticação Bearer.
-- `config/SecurityConfig`: monta a cadeia de filtros do Spring Security, libera os endpoints públicos (`/api/auth/**` e documentação), define sessão stateless e registra o codificador de senha.
+## 4. Autenticação (JWT)
+- **Login**: `POST /api/auth/login` com corpo `{"email": "...", "senha": "..."}` retorna `{ "token": "<jwt>" }`.
+- **Cabeçalho**: envie `Authorization: Bearer <jwt>` em todas as rotas exceto `/api/auth/**`.
+- **Perfis**: `ADMIN` acessa rotas administrativas (gestão de usuários, produtos e pedidos); `CLIENTE` consome catálogo, faz pedidos e vê os próprios pedidos.
 
-### 2.3 Segurança
-- `security/JwtAuthFilter`: filtro que lê o cabeçalho `Authorization`, valida o token JWT e popula o `SecurityContext` com o identificador do usuário.
-- `security/AuthUtils`: utilitário estático para recuperar o `UUID` do usuário autenticado a partir do contexto de segurança.
-- `service/JwtService`: gera e valida tokens JWT assinados com chave simétrica.
+## 5. Referência rápida de endpoints
+### Auth (público)
+- `POST /api/auth/login`: autentica e retorna token.
+- `POST /api/auth/register`: registra cliente (`nome`, `email`, `senha`).
 
-### 2.4 Modelos e persistência
-- `model/entity`: entidades JPA que representam as tabelas do banco (`Usuario`, `Produto`, `Pedido`, `ItemPedido`, `MovimentoEstoque`) e enums auxiliares (`Role`, `StatusPedido`, `TipoMovimento`). Cada entidade mantém campos de auditoria (`criadoPorId`, `atualizadoPorId`, `criadoEm`, etc.).
-- `model/repo`: interfaces `JpaRepository` usadas pelos serviços para acessar os dados. Destacam-se `ProdutoRepository` (consulta produtos ativos), `PedidoRepository` (busca pedidos de um usuário com filtro de visibilidade) e `UsuarioRepository` (consulta por e-mail e status ativo).
+### Usuários (admin)
+- `GET /api/usuarios?ativo=true|false`: lista usuários.
+- `GET /api/usuarios/{id}`: busca usuário.
+- `POST /api/usuarios/registrar-admin`: cria admin (`nome`, `email`, `senha`).
+- `DELETE /api/usuarios/{id}`: desativa conta (soft delete via `ativo=false`).
 
-### 2.5 DTOs (Data Transfer Objects)
-- `dto/auth`: contratos para autenticação e registro (`LoginRequest`, `LoginResponse`, `RegisterRequest`) com validações declarativas.
-- `dto/produto`: payloads de criação e atualização de produtos (`ProdutoCreateRequest`, `ProdutoUpdateRequest`).
-- `dto/pedido`: objetos para criação de pedido e registro de pagamento (`CriarPedidoRequest`, `PagamentoRequest`). Os controladores convertem esses dados em estruturas internas dos serviços.
+### Produtos
+- `GET /api/produtos`: lista produtos ativos.
+- `GET /api/produtos/{id}`: detalhes.
+- `POST /api/produtos` (admin): cria produto (`nome`, `tamanho`, `cor`, `preco`, `quantidadeEstoque?`, `fotoUrl?`).
+- `PUT /api/produtos/{id}` (admin): atualiza dados e pode enviar `ativo`.
+- `PATCH /api/produtos/{id}/visibilidade?ativo=true|false` (admin): ativa/desativa.
 
-### 2.6 Serviços
-- `service/AuthService`: autentica usuários verificando a senha codificada e emite o token JWT.
-- `service/UsuarioService`: registra clientes e administradores, aplica regras de autorização para criação de administradores e permite desativar contas.
-- `service/ProdutoService`: cuida do ciclo de vida do produto, persistindo quem criou/atualizou e controlando visibilidade.
-- `service/EstoqueService`: ajusta o estoque com lançamentos de entrada e saída, valida quantidades e grava `MovimentoEstoque` associado.
-- `service/PedidoService`: cria pedidos, calcula o valor total, aciona o estoque ao receber pagamento e controla cancelamentos.
+### Estoque (autenticado)
+- `POST /api/estoque/entrada?produtoId=<uuid>&qtd=<int>`: credita estoque.
+- `POST /api/estoque/saida?produtoId=<uuid>&qtd=<int>`: debita estoque.
 
-### 2.7 Controladores REST
-Os controladores expõem os endpoints sob `/api/**` e delegam aos serviços as regras de negócio.
-- `controller/AuthController`: login e registro de clientes.
-- `controller/UsuarioController`: operações administrativas de usuários (listagem, busca, criação de administradores, desativação).
-- `controller/ProdutoController`: catálogo de produtos (listar ativos, CRUD limitado e alteração de visibilidade).
-- `controller/EstoqueController`: lançamentos manuais de entrada e saída vinculados ao usuário autenticado.
-- `controller/PedidoController`: fluxo de pedidos (listagem, criação, pagamento, cancelamento) convertendo DTOs em `PedidoService.ItemInput`.
+### Pedidos
+- `GET /api/pedidos` (admin): lista todos.
+- `GET /api/pedidos/usuario/{usuarioId}?visiveis=true|false`: lista do usuário (clientes veem só os próprios).
+- `GET /api/pedidos/{id}`: detalhe (restrito ao dono ou admin).
+- `POST /api/pedidos`: cria pedido com `usuarioId` e itens `[ { produtoId, quantidade } ]`.
+- `POST /api/pedidos/{id}/pagar`: registra pagamento (`metodo`, `referencia`) e dá baixa no estoque.
+- `POST /api/pedidos/{id}/cancelar`: cancela pedido.
 
-## 3. Banco de dados
-O projeto utiliza PostgreSQL e migrações Flyway. O arquivo `application.yml` define a conexão, habilita `ddl-auto: none` e aponta as migrações para `classpath:db/migration`.
+## 6. Exemplos rápidos com curl
+- **Login**
+  ```bash
+  curl -X POST http://localhost:8080/api/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email": "admin@lacouro.com", "senha": "sua-senha"}'
+  ```
+- **Listar produtos (público)**
+  ```bash
+  curl http://localhost:8080/api/produtos
+  ```
+- **Criar produto (admin)**
+  ```bash
+  TOKEN="<jwt-admin>"
+  curl -X POST http://localhost:8080/api/produtos \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"nome":"Tapete Azul","tamanho":"2x3","cor":"Azul","preco":250.0,"quantidadeEstoque":10}'
+  ```
 
-As migrações:
-- `V1__init.sql`: cria as tabelas `usuarios`, `produtos`, `pedidos`, `itens_pedido`, `movimentos_estoque` e insere um administrador padrão.
-- `V2__itens_pedido_add_id.sql`: adiciona chave primária simples à tabela `itens_pedido` e mantém unicidade de produto por pedido.
+## 7. Como consumir no frontend Angular
+1. **Configurar ambiente**: em `environment.ts`, defina `apiUrl: 'http://localhost:8080'`.
+2. **Service de Auth**: crie método `login(email, senha)` que faz `POST ${apiUrl}/api/auth/login`, salva `token` no `localStorage`.
+3. **HttpInterceptor**: intercepte requisições e, se houver token, adicione `Authorization: Bearer <token>`.
+4. **Guards de rota**: proteja rotas privadas com `AuthGuard`; use `RoleGuard` para telas só de admin (`data: { roles: ['ADMIN'] }`).
+5. **Chamadas comuns**:
+   - Catálogo público: `this.http.get<Produto[]>(`${apiUrl}/api/produtos`)`.
+   - CRUD de produto (admin): `POST/PUT/PATCH` conforme seção 5.
+   - Pedidos: `POST /api/pedidos` com itens; `POST /api/pedidos/{id}/pagar` após checkout.
+6. **Tratamento de erro**: o `ApiExceptionHandler` retorna JSON com `timestamp`, `path`, `status`, `message`; exiba mensagem amigável.
 
-## 4. Fluxo principal
-1. Um cliente ou administrador autentica-se via `AuthController`, que aciona `AuthService` e `JwtService` para gerar o token.
-2. O token é enviado nas requisições seguintes. `JwtAuthFilter` valida o token, carrega o usuário pelo repositório e grava seu `UUID` no contexto.
-3. Controladores usam `AuthUtils` para obter o usuário atual, validar permissões e delegar para os serviços.
-4. Os serviços manipulam as entidades através dos repositórios e registram os efeitos no banco. Erros são capturados pelo `ApiExceptionHandler`, que retorna respostas consistentes ao cliente.
+## 8. Checklist rápido de integração
+- Backend rodando em `8080` e banco aplicado com Flyway.
+- Token salvo no frontend após login.
+- Interceptor enviando `Authorization: Bearer <jwt>`.
+- Rotas protegidas por guards; área admin limitada à role `ADMIN`.
+- URLs base vindo de `environment.apiUrl`.
